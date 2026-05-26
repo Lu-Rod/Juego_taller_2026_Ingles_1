@@ -1,0 +1,560 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>English Quest</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:#080614}
+body{display:flex;justify-content:center;align-items:flex-start;padding:12px;min-height:100vh}
+
+#eg{
+  font-family:'Press Start 2P',monospace;
+  background:#0a0818;
+  color:#a78bfa;
+  width:100%;
+  max-width:660px;
+  padding:18px 16px 24px;
+  border:3px solid #7c3aed;
+  border-radius:6px;
+  position:relative;
+  overflow:hidden;
+}
+#eg::before{
+  content:'';position:absolute;inset:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(124,58,237,0.04) 2px,rgba(124,58,237,0.04) 4px);
+  pointer-events:none;z-index:0;
+}
+.z{position:relative;z-index:1}
+
+/* ── Header ── */
+.title{font-size:clamp(13px,3.5vw,18px);color:#c4b5fd;text-align:center;letter-spacing:2px;margin-bottom:4px;text-shadow:0 0 10px #7c3aed}
+.sub{font-size:clamp(8px,2vw,11px);color:#60a5fa;text-align:center;margin-bottom:14px}
+
+/* ── HUD ── */
+.hud{display:flex;justify-content:space-between;font-size:clamp(9px,2.2vw,13px);color:#fbbf24;margin-bottom:12px;border:1px solid #2d1b69;padding:8px 12px;background:#0f0a2e}
+
+/* ── Lives ── */
+.lives{font-size:clamp(16px,4vw,22px);color:#f87171;letter-spacing:6px;text-align:center;margin-bottom:9px}
+
+/* ── Progress bar ── */
+.pbar{height:10px;background:#0f0a2e;border:1px solid #2d1b69;margin-bottom:12px;border-radius:2px}
+.pfill{height:100%;background:#7c3aed;transition:width 0.3s;border-radius:2px}
+
+/* ── Level / mech badges ── */
+.lvl-badge{text-align:center;font-size:clamp(8px,2vw,11px);color:#34d399;margin-bottom:6px;letter-spacing:1px}
+.mech-icon{font-size:clamp(9px,2.2vw,12px);color:#f0abfc;text-align:center;margin-bottom:8px;letter-spacing:1px}
+
+/* ── Question box ── */
+.qbox{background:#0f0a2e;border:2px solid #7c3aed;padding:16px 14px;margin-bottom:14px;border-radius:4px}
+.qcat{font-size:clamp(8px,2vw,11px);color:#60a5fa;margin-bottom:8px}
+.qtxt{font-size:clamp(12px,3vw,16px);color:#fbbf24;line-height:2}
+
+/* ── Arena ── */
+.arena{display:flex;justify-content:space-around;align-items:flex-end;margin-bottom:12px;min-height:clamp(130px,25vw,160px);border:2px solid #2d1b69;background:#080616;padding:10px 4px 0;border-radius:4px}
+.slot{display:flex;flex-direction:column;align-items:center;width:31%}
+.teacher{font-size:clamp(30px,7vw,42px);line-height:1;filter:drop-shadow(0 0 8px #a78bfa)}
+.teacher.hidden{visibility:hidden}
+.teacher.jump{animation:jump 0.25s ease-out}
+@keyframes jump{0%{transform:translateY(0)}50%{transform:translateY(-16px)}100%{transform:translateY(0)}}
+
+/* ── Option platforms ── */
+.platform{
+  width:100%;
+  font-size:clamp(10px,2.5vw,14px);
+  color:#e2d9f3;
+  background:#14093a;
+  border:2px solid #3b2080;
+  padding:12px 5px;
+  text-align:center;
+  line-height:1.7;
+  margin-top:3px;
+  min-height:clamp(58px,14vw,74px);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;
+  border-radius:3px;
+  transition:background 0.1s, border-color 0.1s;
+  user-select:none;
+}
+.platform:active{transform:scale(0.97)}
+.platform.active{border-color:#7c3aed;color:#c4b5fd;background:#1e0a4a}
+.platform.correct{border-color:#34d399!important;background:#05260f!important;color:#34d399!important;animation:fl 0.3s 3}
+.platform.wrong{border-color:#f87171!important;background:#2a0505!important;color:#f87171!important;animation:sh 0.3s}
+@keyframes fl{0%,100%{opacity:1}50%{opacity:0.3}}
+@keyframes sh{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+
+/* ── Keyboard hint (hidden on touch) ── */
+.hint{font-size:clamp(8px,1.8vw,10px);color:#4b5563;text-align:center;margin:6px 0 5px}
+.touch-only{display:none}
+@media (hover:none) and (pointer:coarse){
+  .hint{display:none}
+  .touch-only{display:block}
+}
+
+/* ── Mobile nav buttons ── */
+.touch-nav{display:none;justify-content:center;gap:14px;margin:10px 0 4px}
+@media (hover:none) and (pointer:coarse){.touch-nav{display:flex}}
+.tnav-btn{
+  background:#1e0a4a;border:2px solid #7c3aed;color:#c4b5fd;
+  font-family:'Press Start 2P',monospace;font-size:clamp(12px,4vw,18px);
+  padding:12px 22px;cursor:pointer;border-radius:4px;
+  user-select:none;
+}
+.tnav-btn:active{background:#7c3aed;transform:scale(0.95)}
+.confirm-btn{
+  display:none;background:#7c3aed;border:2px solid #a78bfa;color:#fff;
+  font-family:'Press Start 2P',monospace;font-size:clamp(10px,2.5vw,13px);
+  padding:13px 28px;cursor:pointer;border-radius:4px;margin:8px auto 0;
+  user-select:none;
+}
+.confirm-btn.show{display:block}
+@media (hover:none) and (pointer:coarse){.confirm-btn{display:block;opacity:0.4;pointer-events:none}.confirm-btn.show{opacity:1;pointer-events:auto}}
+
+/* ── Feedback ── */
+.fb{font-size:clamp(10px,2.5vw,13px);text-align:center;min-height:30px;line-height:2;margin-bottom:4px}
+.fb.ok{color:#34d399}
+.fb.err{color:#f87171}
+.exp{font-size:clamp(8px,2vw,11px);color:#9ca3af;display:block;margin-top:6px;line-height:1.8}
+.next-hint{font-size:clamp(8px,2vw,11px);color:#fbbf24;text-align:center;animation:blink 0.8s infinite;margin-top:6px}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+
+/* ── Screens ── */
+.start-screen,.win,.gameover{text-align:center;padding:14px 0}
+.big-emoji{font-size:clamp(48px,12vw,64px);display:block;margin:8px auto}
+.start-screen h2{font-size:clamp(14px,4vw,20px);color:#c4b5fd;margin-bottom:12px;text-shadow:0 0 10px #7c3aed}
+.start-screen p{font-size:clamp(9px,2.2vw,12px);color:#9ca3af;line-height:2.8;margin-bottom:18px}
+.badge{display:inline-block;background:#1e0a4a;border:1px solid #7c3aed;color:#a78bfa;font-size:clamp(8px,1.8vw,11px);padding:4px 10px;margin:3px}
+.gbtn{
+  background:#7c3aed;border:2px solid #a78bfa;color:#fff;
+  font-family:'Press Start 2P',monospace;font-size:clamp(11px,2.8vw,15px);
+  padding:15px 30px;cursor:pointer;margin-top:10px;border-radius:4px;
+}
+.gbtn:hover,.gbtn:active{background:#a78bfa}
+.gbtn.gold{background:#d97706;border-color:#fbbf24}
+.gbtn.gold:hover,.gbtn.gold:active{background:#fbbf24}
+.win h2{font-size:clamp(14px,4vw,20px);color:#fbbf24;margin-bottom:14px;text-shadow:0 0 10px #d97706}
+.gameover h2{font-size:clamp(14px,4vw,20px);color:#f87171;margin-bottom:14px;text-shadow:0 0 10px #ef4444}
+.final{font-size:clamp(10px,2.5vw,14px);color:#fbbf24;margin-bottom:18px;line-height:2.6}
+.lvl-intro h2{font-size:clamp(14px,4vw,19px);margin-bottom:10px}
+.lvl-intro p{font-size:clamp(9px,2.2vw,12px);color:#9ca3af;line-height:2.6;margin-bottom:20px}
+</style>
+</head>
+<body>
+<div id="eg">
+  <div class="z">
+    <div class="title">★ ENGLISH QUEST ★</div>
+    <div class="sub">EMS · VOCABULARY · RETRO EDITION</div>
+    <div class="hud">
+      <span>PTS: <span id="score">0</span></span>
+      <span>LVL: <span id="level">1</span></span>
+      <span>COMBO: <span id="combo">x1</span></span>
+    </div>
+    <div id="sc" class="z"></div>
+  </div>
+</div>
+
+<script>
+/* ════════════════════════════════════════
+   VOCABULARY DATABASE
+   Agregar palabras: { en, es, cat }
+════════════════════════════════════════ */
+const WORDS = [
+  {en:"apple",   es:"manzana",    cat:"Food"},
+  {en:"bread",   es:"pan",        cat:"Food"},
+  {en:"cheese",  es:"queso",      cat:"Food"},
+  {en:"chicken", es:"pollo",      cat:"Food"},
+  {en:"coffee",  es:"café",       cat:"Food"},
+  {en:"egg",     es:"huevo",      cat:"Food"},
+  {en:"fish",    es:"pescado",    cat:"Food"},
+  {en:"juice",   es:"jugo",       cat:"Food"},
+  {en:"milk",    es:"leche",      cat:"Food"},
+  {en:"rice",    es:"arroz",      cat:"Food"},
+  {en:"cake",    es:"torta",      cat:"Food"},
+  {en:"soup",    es:"sopa",       cat:"Food"},
+  {en:"boots",   es:"botas",      cat:"Clothes"},
+  {en:"coat",    es:"abrigo",     cat:"Clothes"},
+  {en:"dress",   es:"vestido",    cat:"Clothes"},
+  {en:"gloves",  es:"guantes",    cat:"Clothes"},
+  {en:"hat",     es:"sombrero",   cat:"Clothes"},
+  {en:"jacket",  es:"chaqueta",   cat:"Clothes"},
+  {en:"jeans",   es:"jeans",      cat:"Clothes"},
+  {en:"shirt",   es:"camisa",     cat:"Clothes"},
+  {en:"shoes",   es:"zapatos",    cat:"Clothes"},
+  {en:"socks",   es:"calcetines", cat:"Clothes"},
+  {en:"skirt",   es:"falda",      cat:"Clothes"},
+  {en:"tie",     es:"corbata",    cat:"Clothes"},
+  {en:"airport", es:"aeropuerto", cat:"Places"},
+  {en:"bank",    es:"banco",      cat:"Places"},
+  {en:"beach",   es:"playa",      cat:"Places"},
+  {en:"church",  es:"iglesia",    cat:"Places"},
+  {en:"hospital",es:"hospital",   cat:"Places"},
+  {en:"hotel",   es:"hotel",      cat:"Places"},
+  {en:"library", es:"biblioteca", cat:"Places"},
+  {en:"market",  es:"mercado",    cat:"Places"},
+  {en:"museum",  es:"museo",      cat:"Places"},
+  {en:"park",    es:"parque",     cat:"Places"},
+  {en:"school",  es:"escuela",    cat:"Places"},
+  {en:"station", es:"estación",   cat:"Places"},
+  {en:"bear",    es:"oso",        cat:"Animals"},
+  {en:"bird",    es:"pájaro",     cat:"Animals"},
+  {en:"cat",     es:"gato",       cat:"Animals"},
+  {en:"cow",     es:"vaca",       cat:"Animals"},
+  {en:"deer",    es:"ciervo",     cat:"Animals"},
+  {en:"dog",     es:"perro",      cat:"Animals"},
+  {en:"elephant",es:"elefante",   cat:"Animals"},
+  {en:"horse",   es:"caballo",    cat:"Animals"},
+  {en:"lion",    es:"león",       cat:"Animals"},
+  {en:"rabbit",  es:"conejo",     cat:"Animals"},
+  {en:"wolf",    es:"lobo",       cat:"Animals"},
+  {en:"shark",   es:"tiburón",    cat:"Animals"},
+  {en:"black",   es:"negro",      cat:"Colors"},
+  {en:"blue",    es:"azul",       cat:"Colors"},
+  {en:"brown",   es:"marrón",     cat:"Colors"},
+  {en:"gray",    es:"gris",       cat:"Colors"},
+  {en:"green",   es:"verde",      cat:"Colors"},
+  {en:"orange",  es:"naranja",    cat:"Colors"},
+  {en:"pink",    es:"rosa",       cat:"Colors"},
+  {en:"purple",  es:"morado",     cat:"Colors"},
+  {en:"red",     es:"rojo",       cat:"Colors"},
+  {en:"white",   es:"blanco",     cat:"Colors"},
+  {en:"yellow",  es:"amarillo",   cat:"Colors"},
+  {en:"gold",    es:"dorado",     cat:"Colors"},
+  {en:"book",    es:"libro",      cat:"School"},
+  {en:"desk",    es:"escritorio", cat:"School"},
+  {en:"exam",    es:"examen",     cat:"School"},
+  {en:"homework",es:"tarea",      cat:"School"},
+  {en:"lesson",  es:"lección",    cat:"School"},
+  {en:"notebook",es:"cuaderno",   cat:"School"},
+  {en:"pencil",  es:"lápiz",      cat:"School"},
+  {en:"quiz",    es:"prueba",     cat:"School"},
+  {en:"ruler",   es:"regla",      cat:"School"},
+  {en:"teacher", es:"profesor/a", cat:"School"},
+  {en:"class",   es:"clase",      cat:"School"},
+  {en:"grade",   es:"nota",       cat:"School"},
+];
+
+/* Fill-in-the-blank sentences */
+const FILLS = [
+  {t:"I put the ___ in my bag.",        ans:"book",     decoys:["desk","exam"]},
+  {t:"She wears a red ___ to school.",  ans:"dress",    decoys:["boots","hat"]},
+  {t:"The ___ runs very fast.",         ans:"horse",    decoys:["fish","bird"]},
+  {t:"We drink ___ every morning.",     ans:"coffee",   decoys:["juice","milk"]},
+  {t:"He went to the ___ to borrow a book.", ans:"library", decoys:["bank","museum"]},
+  {t:"The ___ is big and gray.",        ans:"elephant", decoys:["rabbit","cat"]},
+  {t:"I need a ___ to write.",          ans:"pencil",   decoys:["ruler","notebook"]},
+  {t:"It's cold! Put on your ___.",     ans:"jacket",   decoys:["skirt","socks"]},
+  {t:"We eat ___ and eggs for breakfast.", ans:"bread", decoys:["rice","cake"]},
+  {t:"The sky is ___ on a sunny day.",  ans:"blue",     decoys:["green","brown"]},
+  {t:"I study for the ___ tomorrow.",   ans:"exam",     decoys:["grade","lesson"]},
+  {t:"The plane lands at the ___.",     ans:"airport",  decoys:["station","hotel"]},
+  {t:"The ___ has a very long neck.",   ans:"giraffe",  decoys:["lion","wolf"]},
+  {t:"She bought a new ___ for winter.",ans:"coat",     decoys:["dress","tie"]},
+  {t:"We go to the ___ to buy food.",   ans:"market",   decoys:["museum","park"]},
+  {t:"Mix ___ and yellow to get green.",ans:"blue",     decoys:["red","black"]},
+  {t:"The ___ barked all night.",       ans:"dog",      decoys:["cat","horse"]},
+  {t:"Open your ___ and read chapter 3.",ans:"book",    decoys:["notebook","ruler"]},
+];
+
+/* ════════════════════════════════════════
+   LEVELS CONFIG
+════════════════════════════════════════ */
+const LEVELS = [
+  {name:"BEGINNER",     emoji:"🟢", color:"#34d399", questions:6, mechPool:["translate","fill"]},
+  {name:"INTERMEDIATE", emoji:"🟡", color:"#fbbf24", questions:6, mechPool:["translate","fill","define"]},
+  {name:"ADVANCED",     emoji:"🔴", color:"#f87171", questions:6, mechPool:["fill","define"]},
+];
+
+const MECH_LABELS = {
+  translate:"📖 TRANSLATION",
+  fill:     "✏️  FILL THE BLANK",
+  define:   "🔍 WORD MATCH",
+};
+
+/* ════════════════════════════════════════
+   HELPERS
+════════════════════════════════════════ */
+function shuffle(a){ return [...a].sort(()=>Math.random()-0.5); }
+function rand(a){ return a[Math.floor(Math.random()*a.length)]; }
+function pick(a,n){ return shuffle(a).slice(0,n); }
+
+/* ════════════════════════════════════════
+   QUESTION GENERATORS
+════════════════════════════════════════ */
+function makeTranslate(usedWords){
+  /* pick a word not used this level yet */
+  const pool = shuffle(WORDS.filter(w=>!usedWords.has(w.en)));
+  const w = pool[0];
+  usedWords.add(w.en);
+  const wrongPool = WORDS.filter(x=>x.en!==w.en && x.cat===w.cat);
+  const decoys = pick(wrongPool.length>=2 ? wrongPool : WORDS.filter(x=>x.en!==w.en), 2).map(x=>x.es);
+  const opts = shuffle([w.es, ...decoys]);
+  return {
+    mech:"translate", cat:w.cat,
+    q:`What does "${w.en}" mean in Spanish?`,
+    opts, ans:opts.indexOf(w.es),
+    exp:`"${w.en}" = ${w.es}`
+  };
+}
+
+function makeFill(usedFills){
+  const pool = shuffle(FILLS.filter(f=>!usedFills.has(f.t)));
+  const f = pool[0] || rand(FILLS);
+  usedFills.add(f.t);
+  const opts = shuffle([f.ans, ...f.decoys.slice(0,2)]);
+  return {
+    mech:"fill", cat:"Fill in the blank",
+    q: f.t,
+    opts, ans: opts.indexOf(f.ans),
+    exp:`The missing word is "${f.ans}"`
+  };
+}
+
+function makeDefine(usedWords){
+  const pool = shuffle(WORDS.filter(w=>!usedWords.has(w.en)));
+  const w = pool[0];
+  usedWords.add(w.en);
+  const samecat = WORDS.filter(x=>x.en!==w.en && x.cat===w.cat);
+  const decoys = pick(samecat.length>=2 ? samecat : WORDS.filter(x=>x.en!==w.en), 2).map(x=>x.en);
+  const opts = shuffle([w.en, ...decoys]);
+  const catDesc = {Food:"something you eat or drink",Clothes:"something you wear",
+    Places:"a place or building",Animals:"a living creature",
+    Colors:"describes a color",School:"related to studying"};
+  return {
+    mech:"define", cat:"Word match",
+    q:`Which word in English means "${w.es}" (${catDesc[w.cat] || "vocabulary"})?`,
+    opts, ans: opts.indexOf(w.en),
+    exp:`"${w.en}" = ${w.es}`
+  };
+}
+
+function buildLevelQuestions(lv){
+  const usedWords = new Set();
+  const usedFills = new Set();
+  const mechs = shuffle([...lv.mechPool, ...lv.mechPool]).slice(0, lv.questions);
+  return mechs.map(m => {
+    if(m==="translate") return makeTranslate(usedWords);
+    if(m==="fill")      return makeFill(usedFills);
+    return makeDefine(usedWords);
+  });
+}
+
+/* ════════════════════════════════════════
+   GAME STATE
+════════════════════════════════════════ */
+let lvlQuestions, cur, score, lives, combo, answered, total, pos, lvlIdx;
+
+const sc      = document.getElementById('sc');
+const scoreEl = document.getElementById('score');
+const levelEl = document.getElementById('level');
+const comboEl = document.getElementById('combo');
+
+function updateHUD(){
+  scoreEl.textContent = score;
+  levelEl.textContent = lvlIdx + 1;
+  comboEl.textContent = 'x' + combo;
+}
+
+/* ════════════════════════════════════════
+   SCREENS
+════════════════════════════════════════ */
+function showStart(){
+  sc.innerHTML = `
+    <div class="start-screen">
+      <span class="big-emoji">👩‍🏫</span>
+      <h2>ENGLISH QUEST</h2>
+      <p>
+        Move the teacher with ← →<br>
+        confirm with ↑ or ENTER<br>
+        <em style="color:#7c3aed;font-size:0.9em">(on mobile: tap an option!)</em><br><br>
+        <span class="badge">🍎 Food</span>
+        <span class="badge">👕 Clothes</span>
+        <span class="badge">🏖 Places</span>
+        <span class="badge">🐘 Animals</span>
+        <span class="badge">🎨 Colors</span>
+        <span class="badge">📚 School</span><br><br>
+        3 levels · 3 mechanics · 3 lives
+      </p>
+      <button class="gbtn" onclick="startGame()">▶ START GAME</button>
+    </div>`;
+}
+
+function startGame(){
+  score=0; lives=3; combo=1; answered=false; lvlIdx=0;
+  startLevel();
+}
+
+function startLevel(){
+  lvlQuestions = buildLevelQuestions(LEVELS[lvlIdx]);
+  cur=0; total=lvlQuestions.length;
+  updateHUD();
+  showLevelIntro();
+}
+
+function showLevelIntro(){
+  const lv = LEVELS[lvlIdx];
+  sc.innerHTML = `
+    <div class="start-screen lvl-intro">
+      <span class="big-emoji">${lv.emoji}</span>
+      <h2 style="color:${lv.color}">${lv.name}</h2>
+      <p>
+        Level ${lvlIdx+1} of ${LEVELS.length}<br>
+        ${lv.questions} questions<br><br>
+        Mechanics:<br>
+        ${lv.mechPool.map(m=>'<span class="badge">'+MECH_LABELS[m]+'</span>').join('<br>')}
+      </p>
+      <button class="gbtn" onclick="showQ()">▶ GO!</button>
+    </div>`;
+}
+
+function showQ(){
+  if(cur >= total){
+    if(lvlIdx < LEVELS.length-1){ lvlIdx++; startLevel(); }
+    else showWin();
+    return;
+  }
+  answered = false; pos = 1;
+  const q   = lvlQuestions[cur];
+  const pct = Math.round((cur/total)*100);
+
+  sc.innerHTML = `
+    <div class="lives">${'♥'.repeat(lives)}${'♡'.repeat(3-lives)}</div>
+    <div class="pbar"><div class="pfill" style="width:${pct}%"></div></div>
+    <div class="lvl-badge">${LEVELS[lvlIdx].name} · Q${cur+1}/${total}</div>
+    <div class="mech-icon">${MECH_LABELS[q.mech]}</div>
+    <div class="qbox">
+      <div class="qcat">[${q.cat}]</div>
+      <div class="qtxt">${q.q}</div>
+    </div>
+    <div class="arena" id="arena">
+      ${q.opts.map((o,i)=>`
+        <div class="slot" id="slot${i}">
+          <div class="teacher${i===1?'':' hidden'}" id="mk${i}">👩‍🏫</div>
+          <div class="platform${i===1?' active':''}" id="pl${i}"
+               ontouchstart="tapOption(${i})"
+               onclick="tapOption(${i})">${o}</div>
+        </div>`).join('')}
+    </div>
+    <div class="hint">← → move &nbsp;|&nbsp; ↑ / ENTER confirm</div>
+    <div class="touch-nav">
+      <button class="tnav-btn" ontouchstart="moveSci(Math.max(0,pos-1))" onclick="moveSci(Math.max(0,pos-1))">◀</button>
+      <button class="tnav-btn" ontouchstart="moveSci(Math.min(2,pos+1))" onclick="moveSci(Math.min(2,pos+1))">▶</button>
+    </div>
+    <button class="confirm-btn" id="cbtn" ontouchstart="handleConfirmOrNext()" onclick="handleConfirmOrNext()">✓ CONFIRM</button>
+    <div class="fb" id="fb"></div>`;
+}
+
+/* ════════════════════════════════════════
+   INTERACTION
+════════════════════════════════════════ */
+function moveSci(newPos){
+  if(answered) return;
+  const old = pos; pos = newPos;
+  document.getElementById('mk'+old).classList.add('hidden');
+  document.getElementById('mk'+newPos).classList.remove('hidden');
+  document.getElementById('pl'+old).classList.remove('active');
+  document.getElementById('pl'+newPos).classList.add('active');
+}
+
+/* Tap directly on an option (mobile shortcut) */
+function tapOption(i){
+  if(answered) return;
+  moveSci(i);
+  setTimeout(()=>confirm(), 120); /* small delay so user sees the highlight */
+}
+
+function handleConfirmOrNext(){
+  if(!answered) confirm();
+  else { cur++; showQ(); }
+}
+
+function confirm(){
+  if(answered) return;
+  answered = true;
+  const q  = lvlQuestions[cur];
+  const fb = document.getElementById('fb');
+  const mk = document.getElementById('mk'+pos);
+  mk.classList.add('jump');
+  setTimeout(()=>mk.classList.remove('jump'), 300);
+
+  if(pos === q.ans){
+    document.getElementById('pl'+pos).classList.add('correct');
+    const pts = 10 * combo;
+    score += pts;
+    combo = Math.min(combo+1, 5);
+    fb.className = 'fb ok';
+    fb.innerHTML = `✓ CORRECT! +${pts} PTS<span class="exp">${q.exp}</span>`;
+  } else {
+    document.getElementById('pl'+pos).classList.add('wrong');
+    document.getElementById('pl'+q.ans).classList.add('correct');
+    lives--; combo = 1;
+    fb.className = 'fb err';
+    fb.innerHTML = `✗ WRONG<span class="exp">${q.exp}</span>`;
+    if(lives <= 0){ updateHUD(); setTimeout(showGameOver, 900); return; }
+  }
+  updateHUD();
+
+  /* update confirm button to "NEXT" */
+  const cb = document.getElementById('cbtn');
+  if(cb){ cb.textContent = '▶ NEXT'; cb.classList.add('show'); }
+
+  setTimeout(()=>{
+    const h = document.createElement('div');
+    h.className   = 'next-hint';
+    h.textContent = 'ENTER / tap NEXT to continue';
+    if(fb) fb.appendChild(h);
+  }, 400);
+}
+
+/* ════════════════════════════════════════
+   KEYBOARD
+════════════════════════════════════════ */
+document.addEventListener('keydown', e=>{
+  if(['ArrowLeft','ArrowRight','ArrowUp','Enter'].includes(e.key)) e.preventDefault();
+  if(e.key==='ArrowLeft')                    moveSci(Math.max(0, pos-1));
+  else if(e.key==='ArrowRight')              moveSci(Math.min(2, pos+1));
+  else if(e.key==='ArrowUp'||e.key==='Enter'){
+    if(!answered) confirm();
+    else { cur++; showQ(); }
+  }
+});
+
+/* ════════════════════════════════════════
+   END SCREENS
+════════════════════════════════════════ */
+function showGameOver(){
+  sc.innerHTML = `
+    <div class="gameover">
+      <span class="big-emoji">💔</span>
+      <h2>GAME OVER</h2>
+      <div class="final">
+        SCORE: ${score} PTS<br>
+        LEVEL: ${LEVELS[lvlIdx].name}<br>
+        Q: ${cur}/${total}
+      </div>
+      <button class="gbtn" onclick="startGame()">↺ TRY AGAIN</button>
+    </div>`;
+}
+
+function showWin(){
+  let medal = '🥉';
+  if(score >= 150) medal = '🥇';
+  else if(score >= 100) medal = '🥈';
+  sc.innerHTML = `
+    <div class="win">
+      <span class="big-emoji">${medal}</span>
+      <h2>COMPLETED!</h2>
+      <div class="final">
+        FINAL SCORE: ${score} PTS<br>
+        LIVES LEFT: ${'♥'.repeat(lives)}
+      </div>
+      <button class="gbtn gold" onclick="startGame()">↺ PLAY AGAIN</button>
+    </div>`;
+}
+
+/* ── Boot ── */
+showStart();
+</script>
+</body>
+</html>
